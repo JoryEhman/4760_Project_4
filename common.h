@@ -1,35 +1,39 @@
 #ifndef COMMON_H
 #define COMMON_H
 
-#include <sys/types.h>
+#define BILLION 1000000000ULL
 
-/* Keys (temporary — will switch to ftok later) */
-#define SHM_KEY 0x1234
-#define MSG_KEY 0x2345
+#define MAX_PROCESSES 20
+#define QUEUE_SIZE 20
 
-#define BILLION 1000000000
+#define QUANTUM 25000000   /* 25ms */
+#define DISPATCH_TIME 10000
 
-/* Simulated clock */
+/* ftok file path (must exist!) */
+#define FTOK_PATH "./oss.c"
+#define SHM_PROJ_ID 'S'
+#define MSG_PROJ_ID 'M'
+
 typedef struct {
     unsigned int seconds;
     unsigned int nanoseconds;
 } SimClock;
 
-/* Process Control Block */
 typedef struct {
     int occupied;
     pid_t pid;
-
-    int startSeconds;
-    int startNano;
-
-    int serviceTimeSeconds;
-    int serviceTimeNano;
-
     int blocked;
+
+    unsigned int startSeconds;
+    unsigned int startNano;
+
+    unsigned int serviceTimeSeconds;
+    unsigned int serviceTimeNano;
+
+    unsigned int eventWaitSec;
+    unsigned int eventWaitNano;
 } PCB;
 
-/* Message structure */
 typedef struct {
     long mtype;
     int data;

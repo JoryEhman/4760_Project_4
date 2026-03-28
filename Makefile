@@ -1,19 +1,33 @@
-CC = gcc
-CFLAGS = -Wall -g
+# Makefile — CS4760 Assignment 4: Process Scheduling
+# Author: student
+# Date:   2026-03-27
 
-all: oss user
+CC      = gcc
+CFLAGS  = -Wall -Wextra -g
+TARGETS = oss worker
+
+all: $(TARGETS)
+
+.SUFFIXES: .c .o
+.c.o:
+	$(CC) $(CFLAGS) -c $<
 
 oss: oss.o
 	$(CC) $(CFLAGS) -o oss oss.o
 
-user: user.o
-	$(CC) $(CFLAGS) -o user user.o
+worker: worker.o
+	$(CC) $(CFLAGS) -o worker worker.o
 
-oss.o: oss.c common.h
-	$(CC) $(CFLAGS) -c oss.c
+# Dependencies
+oss.o:    oss.c shared.h queue.h
+worker.o: worker.c shared.h
 
-user.o: user.c common.h
-	$(CC) $(CFLAGS) -c user.c
-
+# Remove object files and executables
 clean:
-	rm -f *.o oss user
+	rm -f *.o $(TARGETS)
+
+# Also remove log files
+cleanall: clean
+	rm -f *.log
+
+.PHONY: all clean cleanall

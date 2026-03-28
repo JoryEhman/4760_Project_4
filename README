@@ -1,16 +1,123 @@
-Name:
-Date:
-Environment: opsys.cs.umsl.edu
+Name: Jory Ehman
+Date: 2026-03-27
+Environment: Linux (hoare.cs.umsl.edu), gcc, vim
 
-How to compile:
-make
+===========================================================
+How to compile the project:
+===========================================================
+    make
 
-How to run:
-./oss
+===========================================================
+Example of how to run the project:
+===========================================================
+    ./oss -n 3 -s 2 -t 4 -i 0.6 -f log.txt
+    ./oss -n 18 -s 5 -t 2.5 -i 0.2 -f oss.log
+    ./oss -h
 
-Description:
-Base structure for Project 4. Includes shared memory clock,
-message queue setup, PCB table, and cleanup logic.
+Command-line options:
+  -h            Print help and exit
+  -n proc       Total number of processes to launch (default: 18, max: 18)
+  -s simul      Maximum simultaneous processes (default: 18, capped at 18)
+  -t timelimit  Upper bound on a process's total CPU burst in seconds (default: 2.5)
+  -i fraction   Minimum fraction of a second between child launches (default: 0.5)
+  -f logfile    Log file name (default: oss.log)
 
-Generative AI used:
-(To be completed)
+===========================================================
+Project Overview
+===========================================================
+This project simulates a Round-Robin process scheduler (OSS).
+
+Files:
+  oss.c     - Main OS simulator. Forks worker processes, maintains the
+              process control table (PCB array in shared memory), runs the
+              Round-Robin scheduler using a ready queue and a blocked queue,
+              and writes a detailed log. Also prints process table to both
+              screen and log every 500 ms of simulated time.
+  worker.c  - Simulated user process. Waits on the message queue for a time
+              quantum, then replies indicating: full quantum used, partial
+              quantum + I/O block (20% chance), or termination.
+  shared.h  - Shared data structures: SimClock, PCB, SharedData, Message,
+              and all #define constants (quantum size, block time, IPC keys).
+  queue.h   - Inline circular FIFO queue for ready and blocked queues.
+  Makefile  - Builds both executables with .c.o suffix rules.
+  README    - This file.
+
+IPC Design:
+  Shared Memory: One SharedData segment holds the simulated clock and the
+    process control table. Key derived with ftok("/tmp", 'A').
+  Message Queue: Single queue for bidirectional communication.
+    OSS sends to worker using mtype = worker's real PID.
+    Worker replies to OSS using mtype = OSS's PID (getppid()).
+    Key derived with ftok("/tmp", 'B').
+  ftok() is used for all keys so the project is safe on a shared server
+    (hoare) and will not collide with other students' IPC resources.
+
+Scheduling Algorithm — Round Robin:
+  - New processes are added to the back of the ready queue.
+  - OSS always dispatches the process at the front of the ready queue.
+  - Full quantum used → process goes to the back of the ready queue.
+  - Partial quantum used (20% I/O chance) → process goes to blocked queue
+    and will be unblocked after 100 ms of simulated time.
+  - Process terminates → PCB is cleared, process is reaped with waitpid().
+  - The ready queue is printed before every scheduling decision.
+  - The process table (including blocked list) is printed every 500 ms of
+    simulated time to both the log file and stdout.
+
+CPU Utilization (per spec):
+  Calculated as the total clock time incremented by OSS for reasons OTHER
+  than a worker running (i.e. scheduling overhead + idle time) divided by
+  total simulated clock time. This matches the spec wording: "calculated by
+  storing up the total time you incremented the clock that was not from
+  getting a message back from a process."
+
+Termination:
+  - Normal: all -n processes have completed.
+  - Signal: SIGINT and SIGTERM call the signal handler which prints the
+    final report, kills all children, removes shared memory and message
+    queue, and exits.
+  - Timeout: SIGALRM fires after 3 real seconds (alarm(3)). The signal
+    handler prints "OSS: caught signal 14 — cleaning up and terminating."
+    to both stderr and the log, then does a full cleanup.
+  - The log also checks the 3-second wall-clock each iteration and prints
+    "OSS: 3-second real-time limit reached — terminating." before breaking
+    out of the loop if the alarm has not fired yet.
+  - Log output is capped at 10,000 lines to prevent runaway files.
+
+Cleanup:
+  All IPC is removed on exit. After any run, verify with:
+    ipcs -m | grep $(id -u)   # should be empty
+    ipcs -q | grep $(id -u)   # should be empty
+
+===========================================================
+Version Control
+===========================================================
+This project uses Git for version control.
+  git init
+  git add .
+  git commit -m "initial submission"
+
+===========================================================
+Generative AI Use
+===========================================================
+Generative AI used: Claude (Anthropic, claude.ai)
+
+Prompts used (paraphrased):
+  - Make the message queue use the worker's PID as mtype for direct delivery
+    and the OSS PID for replies.
+  - Add signal handling that cleans up shared memory and message queues on
+    SIGINT, SIGTERM, and SIGALRM, and prints a final report before exiting.
+  - Fix the ready queue so it prints before dequeuing, not after.
+  - Fix the process table to print to both stdout and the log file.
+  - Fix the CPU utilization formula to match the spec wording (overhead/idle
+    time, not worker run time).
+  - Fix the log line counter to count actual newlines rather than call count.
+  - Add a clear log message when the 3-second wall-clock limit is hit.
+  - Review all files against the rubric for anything missing.
+
+Summary: Claude was used to help complete this project.
+The scheduler logic, IPC design, signal handling, and cleanup
+all worked. Several smaller issues were caught and fixed through iterative
+review: the queue print order, the process table not printing to stdout, the
+CPU utilization formula being backwards relative to the spec, and the log
+line counter being per-call instead of per-newline. Overall Claude was very
+useful for both generating and reviewing the code.
