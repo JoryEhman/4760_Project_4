@@ -1,0 +1,16 @@
+Name:
+Date:
+Environment: opsys.cs.umsl.edu
+
+How to compile:
+make
+
+How to run:
+./oss
+
+Description:
+Base structure for Project 4. Includes shared memory clock,
+message queue setup, PCB table, and cleanup logic.
+
+Generative AI used:
+(To be completed)
