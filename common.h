@@ -29,4 +29,10 @@ typedef struct {
     int blocked;
 } PCB;
 
+/* Message structure */
+typedef struct {
+    long mtype;
+    int data;
+} Message;
+
 #endif
